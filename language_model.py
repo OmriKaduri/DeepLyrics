@@ -9,6 +9,7 @@ from keras.layers import Dense, Activation
 from keras.models import Sequential
 
 import tensorflow as tf
+import sys
 
 
 class LyricsLangModel:
@@ -23,10 +24,10 @@ class LyricsLangModel:
         self.train_y = []
         self.unk_words = 0
 
-    def load_word2vec_model(self):
-        self.word_model = gensim.models.KeyedVectors.load_word2vec_format('GoogleNews-vectors-negative300.bin',
+    def load_word2vec_model(self, file_path="GoogleNews-vectors-negative300.bin"):
+        self.word_model = gensim.models.KeyedVectors.load_word2vec_format(file_path,
                                                                           binary=True)
-        max_lyrics_size = 200
+        max_lyrics_size = 140
         words = []
         for i in range(len(self.df)):
             words.append([word for word in self.df['lyrics'][i].split()[:max_lyrics_size]])
@@ -113,6 +114,11 @@ train_df = create_midi_with_lyrics_df()
 
 print("Loaded training lyrics successfully.")
 lang_model = LyricsLangModel(train_df)
-lang_model.load_word2vec_model()
+if len(sys.argv) > 1:
+    print("Loading word2vec model file from", sys.argv[1])
+    lang_model.load_word2vec_model(sys.argv[1])
+else:
+    lang_model.load_word2vec_model()
+
 print("Loaded Google word2vec model successfully.")
 lang_model.train()
