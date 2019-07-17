@@ -81,12 +81,12 @@ def preprocess_lyrics(df):
 
         row['lyrics'] = ' '.join(row['lyrics'])
 
-        lyrics = row['lyrics'].replace('&', '<EOL>').lstrip()
+        lyrics = row['lyrics'].replace('&', 'EOL').lstrip()
         # lyrics = '<BOS> ' + lyrics
         if lyrics.find(',,,,') == -1:
-            lyrics = lyrics + '<EOS>'
+            lyrics = lyrics + 'EOS'
         else:
-            lyrics = lyrics.replace(',,,,', ' <EOS>')
+            lyrics = lyrics.replace(',,,,', ' EOS')
 
         while lyrics.find('(') != -1:
             open_bracket = lyrics.find('(')

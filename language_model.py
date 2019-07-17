@@ -8,6 +8,8 @@ from keras.layers.embeddings import Embedding
 from keras.layers import Dense, Activation
 from keras.models import Sequential
 
+import tensorflow as tf
+
 
 class LyricsLangModel:
 
@@ -19,6 +21,7 @@ class LyricsLangModel:
         self.emdedding_size = -1
         self.train_x = []
         self.train_y = []
+        self.unk_words = 0
 
     def load_word2vec_model(self):
         self.word_model = gensim.models.KeyedVectors.load_word2vec_format('GoogleNews-vectors-negative300.bin',
@@ -46,15 +49,21 @@ class LyricsLangModel:
             self.train_y[i] = self.word2idx(sentence[-1])
         print('train_x shape:', self.train_x.shape)
         print('train_y shape:', self.train_y.shape)
+        print("Number of unknown words:", self.unk_words)
 
     def word2idx(self, word):
-        print(word)
-        return self.word_model.wv.vocab[word].index
+        if word in self.word_model.wv.vocab:
+            return self.word_model.wv.vocab[word].index
+        elif word.upper() in self.word_model.wv.vocab:
+            return self.word_model.wv.vocab[word.upper()].index
+        else:
+            self.unk_words = self.unk_words + 1
+            return self.word_model.wv.vocab['UNK'].index
 
     def idx2word(self, idx):
         return self.word_model.wv.index2word[idx]
 
-    def sample(preds, temperature=1.0):
+    def sample(self, preds, temperature=1.0):
         if temperature <= 0:
             return np.argmax(preds)
         preds = np.asarray(preds).astype('float64')
@@ -85,18 +94,19 @@ class LyricsLangModel:
             print('%s... -> %s' % (text, sample))
 
     def train(self):
-        model = Sequential()
-        model.add(
-            Embedding(input_dim=self.vocab_size, output_dim=self.emdedding_size, weights=[self.pretrained_weights]))
-        model.add(LSTM(units=self.emdedding_size))
-        model.add(Dense(units=self.vocab_size))
-        model.add(Activation('softmax'))
-        model.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
+        with tf.device('/gpu:0'):
+            model = Sequential()
+            model.add(
+                Embedding(input_dim=self.vocab_size, output_dim=self.emdedding_size, weights=[self.pretrained_weights]))
+            model.add(LSTM(units=self.emdedding_size))
+            model.add(Dense(units=self.vocab_size))
+            model.add(Activation('softmax'))
+            model.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
 
-        model.fit(self.train_x, self.train_y,
-                  batch_size=128,
-                  epochs=20,
-                  callbacks=[LambdaCallback(on_epoch_end=self.on_epoch_end)])
+            model.fit(self.train_x, self.train_y,
+                      batch_size=128,
+                      epochs=20,
+                      callbacks=[LambdaCallback(on_epoch_end=self.on_epoch_end)])
 
 
 train_df = create_midi_with_lyrics_df()
