@@ -1,5 +1,7 @@
 import pandas as pd
 import os
+import string
+import nltk
 
 root_path = "./"
 
@@ -66,4 +68,29 @@ def create_midi_with_lyrics_df(train=True):
     df = pd.merge(midi_df, lyrics_df, how='inner', on=['name', 'song_name'])
     # Merge on inner, because not all midi files have lyrics and vice versa     :(
     print(len(df))
-    return df
+    return preprocess_lyrics(df)
+
+
+def preprocess_lyrics(df):
+    processed_lyrics = []
+    for index, row in df.iterrows():
+        lyrics = row['lyrics'].replace('&', '<\s>').lstrip()
+        # lyrics = '<BOS> ' + lyrics
+        if lyrics.find(',,,,') == -1:
+            lyrics = lyrics + '<EOS>'
+        else:
+            lyrics = lyrics.replace(',,,,', ' <EOS>')
+
+        while lyrics.find('(') != -1:
+            open_bracket = lyrics.find('(')
+            close_bracket = lyrics.find(')')
+            lyrics = lyrics[:open_bracket] + lyrics[close_bracket + 1:]
+        #       Removing brackets, currently regarded as noise to the lyrics
+
+        #     for sentence in lyrics.split(' '):
+        #       print(sentence)
+        row['lyrics'] = lyrics
+        processed_lyrics.extend([w for w in nltk.word_tokenize(lyrics)])
+
+    return processed_lyrics
+
