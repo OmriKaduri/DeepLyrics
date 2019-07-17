@@ -100,6 +100,7 @@ class LyricsLangModel:
 
 
 train_df = create_midi_with_lyrics_df()
+
 print("Loaded training lyrics successfully.")
 lang_model = LyricsLangModel(train_df)
 lang_model.load_word2vec_model()

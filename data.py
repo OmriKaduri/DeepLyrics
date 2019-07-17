@@ -1,9 +1,9 @@
 import pandas as pd
 import os
-import string
-import nltk
 
 root_path = "./"
+import string
+import nltk
 
 
 def extract_data_from_line(line):
@@ -68,13 +68,20 @@ def create_midi_with_lyrics_df(train=True):
     df = pd.merge(midi_df, lyrics_df, how='inner', on=['name', 'song_name'])
     # Merge on inner, because not all midi files have lyrics and vice versa     :(
     print(len(df))
-    return preprocess_lyrics(df)
+    preprocess_lyrics(df)
+    return df
 
 
 def preprocess_lyrics(df):
     processed_lyrics = []
     for index, row in df.iterrows():
-        lyrics = row['lyrics'].replace('&', '<\s>').lstrip()
+        row['lyrics'] = nltk.word_tokenize(row['lyrics'])
+        row['lyrics'] = list(filter(lambda token: token not in string.punctuation or token == '&', row['lyrics']))
+        # '&' isn't filtered because it is the mark of an end of line <EOL>
+
+        row['lyrics'] = ' '.join(row['lyrics'])
+
+        lyrics = row['lyrics'].replace('&', '<EOL>').lstrip()
         # lyrics = '<BOS> ' + lyrics
         if lyrics.find(',,,,') == -1:
             lyrics = lyrics + '<EOS>'
@@ -85,12 +92,12 @@ def preprocess_lyrics(df):
             open_bracket = lyrics.find('(')
             close_bracket = lyrics.find(')')
             lyrics = lyrics[:open_bracket] + lyrics[close_bracket + 1:]
+
+        row['lyrics'] = lyrics
         #       Removing brackets, currently regarded as noise to the lyrics
 
         #     for sentence in lyrics.split(' '):
         #       print(sentence)
-        row['lyrics'] = lyrics
-        processed_lyrics.extend([w for w in nltk.word_tokenize(lyrics)])
+        # processed_lyrics.extend([nltk.word_tokenize(lyrics)])
 
-    return processed_lyrics
-
+    # return processed_lyrics
