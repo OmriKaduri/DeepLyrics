@@ -2,8 +2,9 @@ import string
 import nltk
 import numpy as np
 import os
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
+import tensorflow
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 def parse_raw_song(line):
     data = []
